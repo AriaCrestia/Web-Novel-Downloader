@@ -1,142 +1,142 @@
-import requests
-import os
-from bs4 import BeautifulSoup
-import glob
-import shutil
+try:
+    # Import modules
+    print("Importing modules...", end=" ")
+    from bs4 import BeautifulSoup
+    import os
+    import requests
+    print("Success.\n\n")
+except ModuleNotFoundError as e:
+    print(f"Error{e}")
+    quit()
+# end try
 
-def GetRelPath(folder):
-    """
-    Get's the relative path and creates the folder to download images to.
-    """
-    # Get working dir
-    absolute_path = os.path.dirname(__file__)
-    rel_path = os.path.join(absolute_path, folder)
+def CreateFolders():
+    # Get home user path
+    home_path = os.path.expanduser("~")
+    # Create default directories
     try:
-        # Create save folder
-        print(f"Creating folder: {folder}...")
-        os.mkdir(rel_path)
-        print("Success.\n")
-        return str(rel_path) + "/"
+        os.mkdir(home_path + "/.crestiapps")
+    except:  # noqa: E722
+        pass
+    try:
+        os.mkdir(home_path + "/.crestiapps" + "/web_novel_downloader")
+    except:  # noqa: E722
+        pass
+    save_dir = "/.crestiapps/web_novel_downloader/boxnovel"
+    try:
+        os.mkdir(home_path + save_dir)
+    except:  # noqa: E722
+        pass
+
+def GetRelPath(folder_name: str):
+    """
+    Get the relative folder name.
+    
+    folder_name (str) : the folder name to be checked.
+                        if the folder does not exist, it will be created.
+                        if the folder name returned is invalid, an error will be raised and the program will end.
+    """
+    # Make start_pos global
+    global start_pos
+    # Get home user path
+    home_path = os.path.expanduser("~")
+    # Create default directories
+    save_dir = "/.crestiapps/web_novel_downloader/boxnovel"
+    download = "/" + folder_name
+    
+    try:
+        # Create folder
+        print("Creating download folder...", end=" ")
+        os.mkdir(home_path + save_dir + download + "/")
+        print("Success.")
+        start_pos = 1
+        return home_path + save_dir + download + "/"
     except FileExistsError:
-        # Folder exists error
-        print("\nError: Folder already exists")
-        print("Using pre-existing folder to download\n")
-        return str(rel_path) + "/"
-    except FileNotFoundError:
-        # Invalid input error
-        print("\nError: Invalid path")
-        input("Press ENTER key to exit...")
-        quit()
+        print("\nThe folder you entered already exists.")
+        print("Process will continue in that folder.")
+        print("WARNING: Some files may be overwritten")
+        start_pos = int(input("Start download at chapter number: "))
+        return home_path + save_dir + download + "/"
+    except FileNotFoundError as e:
+        print(e)
+        print("\nThe folder name you entered has some invalid characters.")
+        print("Please check the folder name again and input a valid name.")
+        input("\nPress ENTER key to exit...")
+    # end try
 
-# class CreateEpub:
-#     def CreateFolders():
-#         pass
-#     def CreateMimetype():
-#         file_path = path + folder
-#         f = open(f"{file_path}mimetype", "w")
-#         f.write("application/epub+zip")
-#         f.close()
-#     def CreateIndex():
-#         file_path = path + folder
-#         f = open(f"{file_path}index.html", "w")
-#         f.write(f"""<?xml version='1.0' encoding='utf-8'?>
-#                 <html xmlns="http://www.w3.org/1999/xhtml">
-#                 <head>
-#                     <title>{usr_folder}</title>
-#                 </head>
-                
-#                 <body>
-                
-#                 </body>
-#                 </html>""")
-#         f.close()
-#     def MoveFilesTOCWrite():
-#         source = path
-#         destination = f"{path}{folder}{oebps_folder}{text_folder}"
-#         # Get all files
-#         all_files = glob.glob(os.path.join(source, '*Chapter*'), recursive=True)
-#         amount = len(all_files)
-#         print(f"{amount} files.")
-#         # Write TOC file
-#         file_path = path + folder
-#         f = open("f{file_path}toc.xhtml")
-#         f.write("""<?xml version='1.0' encoding='utf-8'?>
-#                 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-                
-#                 <head>
-#                     <title>Table of Contents</title>
-#                     <style type="text/css">
-#                     li
-#                     {
-#                         list-style-type: none;
-#                         padding-left: 2em;
-#                         margin-left: 0;
-#                     }
-#                     a
-#                     {
-#                         text-decoration: none;
-#                     }
-#                     a:hover
-#                     {
-#                         color: red;
-#                     }
-#                     </style>
-#                 </head>
-                
-#                 <body>
-#                     <h2>Table of Contents</h2>
-                    
-#                     <ul>
-#                 """)
-#         # Move file and write
-#         for file_path in all_files:
-#             dst_path = os.path.join(destination, os.path.basename(file_path))
-#             shutil.move(file_path, dst_path)
-#             f.write(f"       <li><a href='OEBPS/Text/Chapter {move_index}.xhtml'>Chapter {move_index}</a></li>\n\n")
-#             move_index += 1
-#             print(f"{file_path} moved successfully.")
-#         f.write("""    </ul>
-                
-#                 </body>
-                
-#                 </html>""")
-#         f.close()
-        
+def GetChapter(url: str):
+    """Function to get chapter from the url
 
-# Get URL
-summary_url = str(input("Summary page URL: "))
-last_chap = int(input("Latest chapter number: "))
-index = int(input("Start at chapter number: ")) - 1
-move_index = index + 1
-usr_folder = str(input("Save to folder: "))
+    Args:
+        url (str): the URL to the chapter.
+
+    Returns:
+        source_data: the data for the chapter.
+    """
+    try:
+        # Fetch chapter data
+        source_data = requests.get(url).content
+        return source_data
+    except requests.HTTPError:
+        return False
+    except requests.ConnectionError:
+        print("\nInternet connection failed.")
+        input("\nPress ENTER key to exit...")
+    except requests.exceptions.MissingSchema:
+        print("\nInvalid URL.")
+        exit()
+    # end try
+
+def SaveChapter(path: str, name: str, ext: str, content):
+    """Save the chapter data to a file.
+
+    Args:
+        path (str): The path whre the chapter will be saved.
+        name (str): The name of the file.
+        ext (str): The extension of the file.
+        content (unknown): the chapter data to be written.
+    """
+    f = open(f"{path}{name}{ext}", "w")
+    f.write(str(content))
+    f.close()
+    return True
+
+########## Main program begins here ##########
+
+CreateFolders()
+
+## User input values
+usr_url = str(input("Enter novel summary page URL: "))
+usr_amount = int(input("Enter amount of chapters in novel: "))
+usr_folder = str(input("Enter folder to save to: "))
+
+print()
+
+## Initialise values
+ext = [".xhtml"]
+ext_pos = 0
 path = GetRelPath(usr_folder)
-
+print()
+count = start_pos - 1
 failed = []
 
-print("Starting...")
-while index < last_chap:
-    name = "Chapter " + str(index + 1) + ".xhtml"
-    chap_link = summary_url + "chapter-" + str(index + 1) + "/"
-    data = requests.get(chap_link)
-    
-    if data.status_code != 200:
-        failed.append(index)
-        pass
-    else:
-        html_data = BeautifulSoup(data.content, "html.parser")
-        chapter = html_data.find('div', class_='reading-content')
-        f = open(f"{path}{name}", 'w')
-        f.write(str(chapter))
-        f.close()
-        print(f"{name} done.")
-    index += 1
 
-# Finished message
-print("\n\nCompleted successfully.")
+## Collection loop
+while count < usr_amount:
+    data = GetChapter(usr_url + "chapter-" + str(count + 1) + "/")
+    # Record failures
+    if not data:
+        failed.append(usr_url + "chapter-" + str(count + 1) + "/")
+        continue
+    html_data = BeautifulSoup(data, 'html.parser')
+    chapter = html_data.find('div', class_='reading-content')
+    save = SaveChapter(path, "Chapter" + str(count + 1), ext[ext_pos], chapter)
+    print("Chapter " + str(count + 1) + " finished successfully.", end="\r")
+    count = count + 1
 
-# print("Creating epub file...")
-# folder = usr_folder + "temp/"
-# meta_folder = usr_folder + "META-INF/"
-# oebps_folder = usr_folder + "OEBPS/"
-# fonts_folder = oebps_folder + "Fonts/"
-# text_folder = oebps_folder + "Text/"
+## End message
+print("                                                                                                 ")
+print("Process complete.")
+if len(failed) > 0:
+    print(str(len(failed)) + "chapter(s) failed.")
+    print(failed)
